@@ -2,23 +2,29 @@
 #include <algorithm>
 #include <iostream>
 
-LatencyRecorder::LatencyRecorder(size_t capacity) {
+LatencyRecorder::LatencyRecorder(size_t capacity)
+{
     samples_.reserve(capacity);
 }
 
-void LatencyRecorder::record(uint64_t cycles) {
+void LatencyRecorder::record(uint64_t cycles)
+{
     samples_.push_back(cycles);
 }
 
-void LatencyRecorder::report() const {
-    if (samples_.empty()) return;
+void LatencyRecorder::report() const
+{
+    if (samples_.empty())
+        return;
 
     std::vector<uint64_t> sorted = samples_;
     std::sort(sorted.begin(), sorted.end());
 
-    auto pct = [&](double p) {
+    auto pct = [&](double p)
+    {
         size_t idx = static_cast<size_t>(p * sorted.size());
-        if (idx >= sorted.size()) idx = sorted.size() - 1;
+        if (idx >= sorted.size())
+            idx = sorted.size() - 1;
         return sorted[idx];
     };
 

@@ -5,7 +5,8 @@
 #include "orderbook/latency.hpp"
 #include <iostream>
 
-int main() {
+int main()
+{
     constexpr size_t kMessages = 1'000'000;
 
     Feed feed(kMessages);
