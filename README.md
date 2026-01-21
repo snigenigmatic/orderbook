@@ -1,6 +1,6 @@
 # Low Latency Order Book
 
-A C++ project implementing a low-latency order book. Inspiration from the CPPCon 2024 talk [https://youtu.be/sX2nF1fW7kI?si=DKKSbIE9MrRW_i24]'When Nanoseconds Matter' by David Gross 
+A C++ project implementing a low-latency order book. Inspiration from the CPPCon 2024 talk ['When Nanoseconds Matter'] (https://youtu.be/sX2nF1fW7kI?si=DKKSbIE9MrRW_i24) by David Gross 
 
 ## Structure
 
