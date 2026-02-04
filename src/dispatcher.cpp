@@ -8,7 +8,7 @@ void Dispatcher::run(
 {
     for (const auto &msg : feed.messages())
     {
-        uint64_t start = rdtsc();
+        uint64_t start = now_ns();
 
         switch (msg.type)
         {
@@ -31,7 +31,7 @@ void Dispatcher::run(
             break;
         }
 
-        uint64_t end = rdtsc();
+        uint64_t end = now_ns();
         recorder.record(end - start);
     }
 }

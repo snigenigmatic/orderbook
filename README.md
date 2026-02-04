@@ -18,7 +18,7 @@ cmake ..
 cmake --build . --config Release
 ```
 ## Results
-
+- x64
 ```bash
 Map order book
 Latency (cycles)
@@ -33,4 +33,21 @@ Latency (cycles)
   p90: 2000
   p99: 3520
   p99.9: 5640
+  ```
+
+- ARM
+```bash
+Map order book
+Latency (cycles)
+  p50: 42
+  p90: 84
+  p99: 167
+  p99.9: 1167
+
+Vector order book
+Latency (cycles)
+  p50: 42
+  p90: 125
+  p99: 375
+  p99.9: 625
   ```
