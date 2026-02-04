@@ -18,36 +18,25 @@ cmake ..
 cmake --build . --config Release
 ```
 ## Results
-- x64
-```bash
-Map order book
-Latency (cycles)
-  p50: 560
-  p90: 1800
-  p99: 3440
-  p99.9: 5440
 
-Vector order book
-Latency (cycles)
-  p50: 600
-  p90: 2000
-  p99: 3520
-  p99.9: 5640
-  ```
+> **Note on Normalization:**
+> *   **x64 (Ryzen 8945HS):** Measured in CPU cycles. Converted using estimated ~5.0 GHz (Divide by 5).
+> *   **ARM (Apple M2):** Measured in 24 MHz timer ticks. Converted using 41.67 ns per tick (Multiply by 41.67).
 
-- ARM
-```bash
-Map order book
-Latency (cycles)
-  p50: 42
-  p90: 84
-  p99: 167
-  p99.9: 1167
+### x64 (Ryzen 8945HS)
 
-Vector order book
-Latency (cycles)
-  p50: 42
-  p90: 125
-  p99: 375
-  p99.9: 625
-  ```
+| Metric | Map (Cycles) | Map (ns) | Vector (Cycles) | Vector (ns) |
+| :--- | :--- | :--- | :--- | :--- |
+| **p50** | 560 | **112** | 600 | **120** |
+| **p90** | 1800 | **360** | 2000 | **400** |
+| **p99** | 3440 | **688** | 3520 | **704** |
+| **p99.9**| 5440 | **1088** | 5640 | **1128** |
+
+### ARM (Apple M2)
+
+| Metric | Map (Ticks) | Map (ns) | Vector (Ticks) | Vector (ns) |
+| :--- | :--- | :--- | :--- | :--- |
+| **p50** | 42 | **1,750** | 42 | **1,750** |
+| **p90** | 84 | **3,500** | 125 | **5,209** |
+| **p99** | 167 | **6,959** | 375 | **15,626** |
+| **p99.9**| 1167 | **48,629** | 625 | **26,044** |

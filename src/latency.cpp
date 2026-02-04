@@ -1,4 +1,5 @@
 #include "orderbook/latency.hpp"
+#include "orderbook/timing.hpp"
 #include <algorithm>
 #include <iostream>
 
@@ -28,7 +29,7 @@ void LatencyRecorder::report() const
         return sorted[idx];
     };
 
-    std::cout << "Latency (cycles)\n";
+    std::cout << "Latency (" << timing_unit() << ")\n";
     std::cout << "  p50: " << pct(0.50) << "\n";
     std::cout << "  p90: " << pct(0.90) << "\n";
     std::cout << "  p99: " << pct(0.99) << "\n";
