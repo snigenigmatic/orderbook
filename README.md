@@ -11,12 +11,29 @@ A C++ project implementing a low-latency order book. Inspiration from the CPPCon
 
 ## Build
 
+- CMake
 ```bash
 mkdir build
 cd build
 cmake ..
 cmake --build . --config Release
 ```
+
+- Gradle
+```bash
+### Gradle
+
+```bash
+# Build library and application
+./gradlew assemble
+
+# Build and run unit tests
+./gradlew :lib:test
+
+# Build everything + tests
+./gradlew build
+```
+
 ## Results
 
 > **Note on Normalization:**
