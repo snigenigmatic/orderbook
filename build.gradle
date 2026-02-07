@@ -1,0 +1,2 @@
+// Root project – redirect build output to avoid conflict with CMake's build/ directory
+layout.buildDirectory = file('gradle-build')

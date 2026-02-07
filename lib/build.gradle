@@ -1,0 +1,73 @@
+plugins {
+    id 'cpp-library'
+    id 'cpp-unit-test'
+}
+
+library {
+    targetMachines = [machines.windows.x86_64]
+    linkage = [Linkage.STATIC]
+
+    // Library sources (everything except main.cpp)
+    source.from fileTree("${rootDir}/src") { exclude 'main.cpp' }
+    publicHeaders.from file("${rootDir}/include")
+}
+
+// ─────────────────────────────────────────────────────────
+//  GoogleTest – fetch once, compile alongside test sources
+// ─────────────────────────────────────────────────────────
+def gtestVersion = '1.14.0'
+def gtestBaseDir = layout.buildDirectory.dir("googletest/googletest-${gtestVersion}")
+
+tasks.register('fetchGoogleTest') {
+    def marker = layout.buildDirectory.file('googletest/.fetched')
+    outputs.file(marker)
+    doLast {
+        def dest = layout.buildDirectory.dir('googletest').get().asFile
+        if (!new File(dest, "googletest-${gtestVersion}").exists()) {
+            dest.mkdirs()
+            def zip = new File(temporaryDir, 'gtest.zip')
+            ant.get(
+                src: "https://github.com/google/googletest/archive/refs/tags/v${gtestVersion}.zip",
+                dest: zip
+            )
+            copy {
+                from zipTree(zip)
+                into dest
+            }
+        }
+        marker.get().asFile.text = 'ok'
+    }
+}
+
+unitTest {
+    def gtest = gtestBaseDir.get().asFile.absolutePath
+
+    // Project test sources
+    source.from file("${rootDir}/tests")
+
+    // GoogleTest amalgamated sources (single-translation-unit build)
+    source.from files("${gtest}/googletest/src/gtest-all.cc",
+                      "${gtest}/googletest/src/gtest_main.cc")
+
+    // Include paths
+    privateHeaders.from file("${rootDir}/include")
+    privateHeaders.from file("${gtest}/googletest/include")
+    privateHeaders.from file("${gtest}/googletest")          // internal includes for gtest-all.cc
+}
+
+// ─────────────────────────────────────────────────────────
+//  Compiler flags
+// ─────────────────────────────────────────────────────────
+tasks.withType(CppCompile).configureEach {
+    if (name.toLowerCase().contains('test')) {
+        dependsOn tasks.named('fetchGoogleTest')
+    }
+    compilerArgs.addAll(toolChain.map { tc ->
+        if (tc in VisualCpp) {
+            return ['/std:c++20', '/W4', '/permissive-', '/EHsc']
+        } else {
+            return ['-std=c++20', '-O3', '-march=native',
+                    '-Wall', '-Wextra', '-Wpedantic']
+        }
+    })
+}

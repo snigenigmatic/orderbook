@@ -1,0 +1,3 @@
+rootProject.name = 'low-latency-orderbook'
+
+include 'lib', 'app'

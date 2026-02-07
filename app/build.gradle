@@ -1,0 +1,38 @@
+plugins {
+    id 'cpp-application'
+}
+
+application {
+    targetMachines = [machines.windows.x86_64]
+
+    // Only main.cpp – library code comes via the :lib dependency
+    source.from fileTree("${rootDir}/src") { include 'main.cpp' }
+
+    dependencies {
+        implementation project(':lib')
+    }
+}
+
+// ─────────────────────────────────────────────────────────
+//  Compiler / linker flags
+// ─────────────────────────────────────────────────────────
+tasks.withType(CppCompile).configureEach {
+    compilerArgs.addAll(toolChain.map { tc ->
+        if (tc in VisualCpp) {
+            return ['/std:c++20', '/W4', '/permissive-', '/EHsc']
+        } else {
+            return ['-std=c++20', '-O3', '-march=native',
+                    '-Wall', '-Wextra', '-Wpedantic']
+        }
+    })
+}
+
+// pthread on Linux (harmless no-op on MSVC)
+tasks.withType(LinkExecutable).configureEach {
+    linkerArgs.addAll(toolChain.map { tc ->
+        if (!(tc in VisualCpp)) {
+            return ['-lpthread']
+        }
+        return []
+    })
+}
