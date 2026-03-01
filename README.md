@@ -26,11 +26,15 @@ cmake --build . --config Release
 ```bash
 # Build library and application
 ./gradlew assemble
+```
 
 # Build and run unit tests
+```bash
 ./gradlew :lib:test
+```
 
 # Build everything + tests
+```bash
 ./gradlew build
 ```
 
