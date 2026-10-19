@@ -19,7 +19,7 @@ def make_config(bar_seconds: float = 10.0, order_latency: float = 0.001, maker_r
 
 
 def replay_bars(files: LobsterFiles, bar_seconds: float = 10.0) -> tuple[pd.DataFrame, dict]:
-    bt = Backtester(str(files.message), str(files.orderbook), make_config(bar_seconds))
+    bt = files.make_backtester(make_config(bar_seconds))
     start = time.perf_counter()
     bt.run_to_end()
     elapsed = time.perf_counter() - start

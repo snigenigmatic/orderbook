@@ -18,7 +18,8 @@ timestral = [
     "torch>=2.4",
     "timestral @ git+https://github.com/mistralai/timestral.git",
 ]
-dev = ["pytest>=8"]
+databento = ["databento>=0.40", "zstandard>=0.22"]
+dev = ["pytest>=8", "databento>=0.40", "zstandard>=0.22"]
 
 [project.scripts]
 lobcast = "lobcast.cli:main"

@@ -212,6 +212,38 @@ void Backtester::process(const LobsterMessage& m, size_t row)
         trade_volume = m.size;
         break;
 
+    case LobsterEvent::FillNotice:
+    {
+        OrderInfo info = book_.locate(m.order_id);
+        Side resting = info.found ? info.side : side;
+        handle_trade(resting, m.price, m.size, info.found ? info.seq : 0, m.time);
+        is_trade = true;
+        trade_volume = m.size;
+        break;
+    }
+
+    case LobsterEvent::Clear:
+        book_.clear_visible();
+        break;
+
+    case LobsterEvent::Modify:
+    {
+        OrderInfo info = book_.locate(m.order_id);
+        if (info.found && info.price == m.price && m.size <= info.volume)
+        {
+            book_.on_modify(m.order_id, m.size);
+        }
+        else
+        {
+            if (info.found)
+                book_.on_delete(m.order_id);
+            if (!open_ids_.empty())
+                check_crossing_add(side, m.price, m.size, m.time);
+            book_.on_add(m.order_id, side, m.price, m.size);
+        }
+        break;
+    }
+
     case LobsterEvent::Cross:
         break;
 
@@ -402,7 +434,24 @@ void Backtester::fill_own(OwnOrder& o, Volume volume, Price price, double t)
 
 void Backtester::update_bars(double t, bool is_trade, Volume trade_volume)
 {
+    bool in_session = t >= config_.session_start && t <= config_.session_end;
     bool two_sided = book_.has_bid() && book_.has_ask();
+    if (!in_session)
+    {
+        if (two_sided)
+        {
+            Price bb = book_.best_bid();
+            Price ba = book_.best_ask();
+            bar_last_spread_ = static_cast<double>(ba - bb);
+            bar_last_time_ = std::max(bar_last_time_, config_.session_start);
+            bar_mid_last_ = 0.5 * static_cast<double>(ba + bb);
+            prev_bid_px_ = bb;
+            prev_ask_px_ = ba;
+            prev_bid_sz_ = book_.visible_at(Side::Bid, bb);
+            prev_ask_sz_ = book_.visible_at(Side::Ask, ba);
+        }
+        return;
+    }
     if (two_sided)
     {
         Price bb = book_.best_bid();

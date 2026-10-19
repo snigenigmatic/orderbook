@@ -213,3 +213,83 @@ TEST(Backtester, LatencyDelaysActivationAndCancels)
     EXPECT_EQ(bt.order(id)->status, OwnStatus::Cancelled);
     EXPECT_EQ(bt.position(), 0);
 }
+
+TEST(Backtester, FillNoticeUsesPriorityWithoutRemovingVolume)
+{
+    std::vector<LobsterMessage> msgs = {
+        msg(34200.1, LobsterEvent::Submit, 1, 100, 1000000, 1),
+        msg(34200.1, LobsterEvent::Submit, 2, 100, 1000300, -1),
+        msg(34200.4, LobsterEvent::Submit, 3, 50, 1000000, 1),
+        msg(34200.5, LobsterEvent::FillNotice, 1, 100, 1000000, 1),
+        msg(34200.5, LobsterEvent::PartialCancel, 1, 100, 1000000, 1),
+        msg(34200.6, LobsterEvent::FillNotice, 3, 30, 1000000, 1),
+        msg(34200.6, LobsterEvent::PartialCancel, 3, 30, 1000000, 1),
+    };
+    Backtester bt(msgs, LobsterSnapshots{}, test_config());
+    bt.run_until(34200.2);
+    OrderId id = bt.submit(Side::Bid, 1000000, 40);
+    bt.run_until(34200.55);
+    EXPECT_EQ(bt.position(), 0);
+    EXPECT_EQ(bt.queue_ahead(id), 0);
+    EXPECT_EQ(bt.book().visible_at(Side::Bid, 1000000), 50);
+    bt.run_to_end();
+    EXPECT_EQ(bt.position(), 30);
+    EXPECT_EQ(bt.book().visible_at(Side::Bid, 1000000), 20);
+}
+
+TEST(Backtester, ModifyFollowsDatabentoPriorityRules)
+{
+    std::vector<LobsterMessage> msgs = {
+        msg(34200.1, LobsterEvent::Submit, 1, 100, 1000000, 1),
+        msg(34200.1, LobsterEvent::Submit, 2, 100, 1000000, 1),
+        msg(34200.1, LobsterEvent::Submit, 9, 100, 1000300, -1),
+        msg(34200.4, LobsterEvent::Modify, 1, 60, 1000000, 1),
+        msg(34200.5, LobsterEvent::Modify, 2, 150, 1000000, 1),
+        msg(34200.6, LobsterEvent::Modify, 1, 60, 999900, 1),
+    };
+    Backtester bt(msgs, LobsterSnapshots{}, test_config());
+    bt.run_until(34200.2);
+    OrderId id = bt.submit(Side::Bid, 1000000, 10);
+    bt.run_until(34200.45);
+    EXPECT_EQ(bt.queue_ahead(id), 160);
+    bt.run_until(34200.55);
+    EXPECT_EQ(bt.queue_ahead(id), 60);
+    bt.run_to_end();
+    EXPECT_EQ(bt.queue_ahead(id), 0);
+    EXPECT_EQ(bt.book().visible_at(Side::Bid, 999900), 60);
+}
+
+TEST(Backtester, ClearWipesMarketButKeepsOwnOrders)
+{
+    std::vector<LobsterMessage> msgs = {
+        msg(34200.1, LobsterEvent::Submit, 1, 100, 1000000, 1),
+        msg(34200.1, LobsterEvent::Submit, 2, 100, 1000300, -1),
+        msg(34200.5, LobsterEvent::Clear, 0, 0, 0, 0),
+        msg(34200.6, LobsterEvent::Submit, 3, 70, 1000000, 1),
+    };
+    Backtester bt(msgs, LobsterSnapshots{}, test_config());
+    bt.run_until(34200.2);
+    OrderId id = bt.submit(Side::Bid, 1000000, 10);
+    bt.run_to_end();
+    EXPECT_FALSE(bt.book().has_ask());
+    EXPECT_EQ(bt.book().visible_at(Side::Bid, 1000000), 70);
+    EXPECT_EQ(bt.queue_ahead(id), 0);
+}
+
+TEST(Backtester, PreMarketEventsBuildBookButNotBars)
+{
+    std::vector<LobsterMessage> msgs = {
+        msg(30000.0, LobsterEvent::Submit, 1, 100, 1000000, 1),
+        msg(30000.0, LobsterEvent::Submit, 2, 100, 1000400, -1),
+        msg(31000.0, LobsterEvent::Submit, 3, 100, 1000200, -1),
+        msg(31000.5, LobsterEvent::FillNotice, 3, 100, 1000200, -1),
+        msg(31000.5, LobsterEvent::PartialCancel, 3, 100, 1000200, -1),
+        msg(34205.0, LobsterEvent::Submit, 4, 100, 999900, 1),
+    };
+    Backtester bt(msgs, LobsterSnapshots{}, test_config());
+    bt.run_until(34215.0);
+    ASSERT_EQ(bt.bars().end_time.size(), 1u);
+    EXPECT_DOUBLE_EQ(bt.bars().volume[0], 0.0);
+    EXPECT_DOUBLE_EQ(bt.bars().realized_var[0], 0.0);
+    EXPECT_DOUBLE_EQ(bt.bars().spread[0], 400.0);
+}

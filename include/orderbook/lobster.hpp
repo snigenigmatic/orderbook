@@ -13,7 +13,10 @@ enum class LobsterEvent : int8_t
     ExecuteVisible = 4,
     ExecuteHidden = 5,
     Cross = 6,
-    Halt = 7
+    Halt = 7,
+    FillNotice = 8,
+    Clear = 9,
+    Modify = 10
 };
 
 struct LobsterMessage

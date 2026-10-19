@@ -46,6 +46,19 @@ class ForecastTable:
         q = int(np.argmin(np.abs(self.levels - level)))
         return float(self.values[i, v, q])
 
+    def subset(self, mask: np.ndarray) -> "ForecastTable":
+        return ForecastTable(
+            name=self.name,
+            targets=self.targets,
+            levels=self.levels,
+            bar_index=self.bar_index[mask],
+            available_time=self.available_time[mask],
+            values=self.values[mask],
+            realized=self.realized[mask],
+            latency_seconds=self.latency_seconds,
+            compute_seconds=self.compute_seconds,
+        )
+
     def save(self, path: str | Path) -> None:
         np.savez_compressed(
             path,
@@ -107,7 +120,22 @@ def horizon_mean(series: np.ndarray, horizon: int) -> np.ndarray:
 
 
 def realized_targets(df: pd.DataFrame, targets: tuple[str, ...], horizon: int) -> np.ndarray:
-    return np.stack([horizon_mean(df[t].to_numpy(float), horizon) for t in targets], axis=1)
+    out = np.stack([horizon_mean(df[t].to_numpy(float), horizon) for t in targets], axis=1)
+    if "day" in df:
+        day = df["day"].to_numpy()
+        n = len(day)
+        ahead = np.concatenate([day[horizon:], np.full(horizon, -1)])
+        out[ahead[:n] != day] = np.nan
+    return out
+
+
+def valid_indices(df: pd.DataFrame, min_context: int) -> np.ndarray:
+    n = len(df)
+    idx = np.arange(min_context - 1, n - 1)
+    if "day" in df:
+        day = df["day"].to_numpy()
+        idx = idx[day[idx + 1] == day[idx]]
+    return idx
 
 
 def walk_forward(
@@ -121,11 +149,12 @@ def walk_forward(
     batch_size: int = 32,
     latency_seconds: float | None = None,
     progress: bool = False,
+    indices: np.ndarray | None = None,
 ) -> ForecastTable:
     y = df[list(targets)].to_numpy(float).T
     x = df[list(covariates)].to_numpy(float).T if covariates else None
     n = y.shape[1]
-    idx = np.arange(min_context - 1, n - 1)
+    idx = valid_indices(df, min_context) if indices is None else np.asarray(indices)
 
     out = np.full((len(idx), len(targets), len(model.levels)), np.nan)
     started = time.perf_counter()
@@ -187,8 +216,7 @@ def ewma_baseline(
     residual_window: int = 360,
     levels: np.ndarray = TIMESTRAL_LEVELS,
 ) -> ForecastTable:
-    n = len(df)
-    idx = np.arange(min_context - 1, n - 1)
+    idx = valid_indices(df, min_context)
     realized_all = realized_targets(df, targets, horizon)
     out = np.full((len(idx), len(targets), len(levels)), np.nan)
 

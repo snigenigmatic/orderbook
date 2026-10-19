@@ -1,6 +1,7 @@
 #include "orderbook/backtest.hpp"
 
 #include <nanobind/nanobind.h>
+#include <nanobind/ndarray.h>
 #include <nanobind/stl/pair.h>
 #include <nanobind/stl/string.h>
 #include <nanobind/stl/vector.h>
@@ -52,9 +53,27 @@ NB_MODULE(_core, m)
         .def_ro("resting_seconds", &Fill::resting_seconds)
         .def_ro("mid_at_fill", &Fill::mid_at_fill);
 
+    using F64 = nb::ndarray<const double, nb::ndim<1>, nb::c_contig, nb::device::cpu>;
+    using I64 = nb::ndarray<const int64_t, nb::ndim<1>, nb::c_contig, nb::device::cpu>;
+    using U64 = nb::ndarray<const uint64_t, nb::ndim<1>, nb::c_contig, nb::device::cpu>;
+    using I8 = nb::ndarray<const int8_t, nb::ndim<1>, nb::c_contig, nb::device::cpu>;
+
     nb::class_<Backtester>(m, "Backtester")
         .def(nb::init<const std::string&, const std::string&, BacktestConfig>(),
              "message_path"_a, "orderbook_path"_a, "config"_a)
+        .def_static("from_events", [](F64 time, I8 type, U64 order_id, I64 size, I64 price, I8 direction, BacktestConfig config)
+        {
+            size_t n = time.shape(0);
+            if (type.shape(0) != n || order_id.shape(0) != n || size.shape(0) != n || price.shape(0) != n || direction.shape(0) != n)
+                throw std::invalid_argument("event arrays must have equal length");
+            std::vector<LobsterMessage> messages(n);
+            for (size_t i = 0; i < n; ++i)
+            {
+                messages[i] = LobsterMessage{time(i), static_cast<LobsterEvent>(type(i)), order_id(i), size(i), price(i), direction(i)};
+            }
+            return new Backtester(std::move(messages), LobsterSnapshots{}, config);
+        }, "time"_a, "type"_a, "order_id"_a, "size"_a, "price"_a, "direction"_a, "config"_a,
+        nb::rv_policy::take_ownership)
         .def("run_until", &Backtester::run_until, "t"_a, nb::call_guard<nb::gil_scoped_release>())
         .def("run_to_end", &Backtester::run_to_end, nb::call_guard<nb::gil_scoped_release>())
         .def("submit", &Backtester::submit, "side"_a, "price"_a, "quantity"_a)

@@ -18,6 +18,12 @@ class LobsterFiles:
     levels: int
     message: Path
     orderbook: Path
+    kind: str = "lobster"
+
+    def make_backtester(self, config):
+        from ._core import Backtester
+
+        return Backtester(str(self.message), str(self.orderbook), config)
 
 
 def sample_name(ticker: str, kind: str, levels: int) -> str:
@@ -57,3 +63,20 @@ def fetch_sample(ticker: str, dest: str | Path, levels: int = 10) -> LobsterFile
                 out.write(chunk)
         tmp.rename(target)
     return find_lobster_files(dest, ticker, levels)
+
+
+def discover_days(data_dir: str | Path, ticker: str, levels: int = 10) -> list:
+    from .databento_data import DatabentoDay
+
+    data_dir = Path(data_dir)
+    days = {}
+    for message in sorted(data_dir.glob(f"{ticker}_*_message_{levels}.csv")):
+        orderbook = message.with_name(message.name.replace("_message_", "_orderbook_"))
+        if orderbook.exists():
+            date = message.name.split("_")[1]
+            days[date] = LobsterFiles(ticker, date, levels, message, orderbook)
+    for path in sorted(data_dir.glob(f"{ticker}_*.mbo.dbn.zst")):
+        date = path.name[len(ticker) + 1:len(ticker) + 11]
+        kind = "synthetic" if ".synthetic." in path.name else "databento"
+        days.setdefault(date, DatabentoDay(ticker, date, path, kind=kind))
+    return [days[d] for d in sorted(days)]

@@ -23,6 +23,15 @@ struct PriceLevel
     std::list<QueueNode> queue;
 };
 
+struct OrderInfo
+{
+    bool found = false;
+    Side side = Side::Bid;
+    Price price = 0;
+    uint64_t seq = 0;
+    Volume volume = 0;
+};
+
 struct ExecResult
 {
     bool found = false;
@@ -51,6 +60,8 @@ public:
     bool cancel_partial(OrderId order_id, Volume volume);
     ExecResult execute(OrderId order_id, Volume volume);
     bool contains(OrderId order_id) const;
+    OrderInfo locate(OrderId order_id) const;
+    void clear_visible();
 
     uint64_t add_own(OrderId order_id, Side side, Price price, Volume volume);
     bool reduce_own(OrderId order_id, Volume volume);

@@ -104,7 +104,7 @@ class MarketMaker:
     def run(self, files: LobsterFiles, bars: pd.DataFrame) -> RunResult:
         p = self.p
         config = make_config(bar_seconds=float(bars["end_time"].diff().median()), order_latency=p.order_latency, maker_rebate=p.maker_rebate)
-        bt = Backtester(str(files.message), str(files.orderbook), config)
+        bt = files.make_backtester(config)
         bars_vol = bars["vol_bps"].to_numpy(float)
         bar_end = bars["end_time"].to_numpy(float)
 

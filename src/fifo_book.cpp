@@ -146,6 +146,46 @@ bool FifoOrderBook::contains(OrderId order_id) const
     return index_.count(order_id) > 0;
 }
 
+OrderInfo FifoOrderBook::locate(OrderId order_id) const
+{
+    OrderInfo info;
+    auto it = index_.find(order_id);
+    if (it == index_.end())
+        return info;
+    info.found = true;
+    info.side = it->second.side;
+    info.price = it->second.price;
+    info.seq = it->second.node->seq;
+    info.volume = it->second.node->volume;
+    return info;
+}
+
+void FifoOrderBook::clear_visible()
+{
+    auto wipe = [this](auto& levels)
+    {
+        for (auto level = levels.begin(); level != levels.end();)
+        {
+            auto& queue = level->second.queue;
+            for (auto node = queue.begin(); node != queue.end();)
+            {
+                if (node->own)
+                {
+                    ++node;
+                    continue;
+                }
+                if (node->order_id != kGhostId)
+                    index_.erase(node->order_id);
+                node = queue.erase(node);
+            }
+            level->second.visible = 0;
+            level = queue.empty() ? levels.erase(level) : std::next(level);
+        }
+    };
+    wipe(bids_);
+    wipe(asks_);
+}
+
 uint64_t FifoOrderBook::add_own(OrderId order_id, Side side, Price price, Volume volume)
 {
     PriceLevel& level = level_for(side, price);
