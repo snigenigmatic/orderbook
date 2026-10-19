@@ -92,15 +92,14 @@ def forecast_chart(r: TickerReport, table: ForecastTable, target: str, label: st
 def equity_chart(r: TickerReport) -> str:
     fig, ax = plt.subplots(figsize=(9.6, 3.1))
     for i, res in enumerate(r.results):
-        ax.plot(clock(res.path["time"]), res.path["equity"], color=color_for(res.name, i), linewidth=1.3, label=res.name)
-        last = res.path.iloc[-1]
-        ax.annotate(f"{res.name}  ${last['equity']:,.0f}", (clock([last["time"]])[0], last["equity"]),
-                    xytext=(6, 0), textcoords="offset points", fontsize=8, color=color_for(res.name, i), va="center")
+        last = res.path.iloc[-1]["equity"]
+        ax.plot(clock(res.path["time"]), res.path["equity"], color=color_for(res.name, i), linewidth=1.3,
+                label=f"{res.name}  {fmt(last, 'usd')}")
     ax.axhline(0, color="#bdbab0", linewidth=0.8)
     ax.set_ylabel("PnL incl. rebates (USD)")
-    ax.set_xlim(9.5, 16.6)
     hour_ticks(ax)
     style(ax)
+    ax.legend(frameon=False, fontsize=8.5, loc="lower left")
     return png(fig)
 
 

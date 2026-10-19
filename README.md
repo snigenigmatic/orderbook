@@ -66,11 +66,46 @@ The main thing this does **not** model is market impact: your fills do not remov
 
 The 10-level LOBSTER files leave out messages for orders deeper than level 10, and orders resting before 9:30 have no add message. So the replay compares itself against LOBSTER's snapshot after every message and patches any difference, putting unexplained volume at the front of the queue (the conservative choice for your fills). Results on 21 June 2012:
 
-RESULTS_FIDELITY
+| | AAPL | MSFT |
+| :--- | ---: | ---: |
+| Messages | 400,391 | 668,765 |
+| Top of book needed a correction | 57 messages (0.01%) | 1,116 messages (0.17%) |
+| Any level needed a correction | 3.9% | 0.75% |
+| Replay with reconciliation | ~0.6 s | ~0.75 s |
+
+Almost all of the remaining corrections are at level 10, which is exactly where the missing deep-book messages show up.
 
 ## Results
 
-RESULTS_STRATEGY
+One trading day per ticker (21 June 2012), 100-share quotes, max inventory 500, 1 ms order latency, quoting 9:35 to 15:55. Three strategies share identical quoting code and differ only in the volatility forecast they read:
+
+- **touch**: always quote at the best bid and ask, skewed by inventory. No forecast.
+- **ewma**: widen quotes to the forecast 90th percentile of next-bar volatility, and pull quotes when that forecast is extreme. Forecast from an EWMA with empirical residual quantiles.
+- **timestral**: the same rules, with the forecast from Timestral-209M.
+
+| | AAPL touch | AAPL ewma | AAPL timestral | MSFT touch | MSFT ewma | MSFT timestral |
+| :--- | ---: | ---: | ---: | ---: | ---: | ---: |
+| PnL incl. rebates | -$3,820 | $821 | **$844** | -$68 | **$70** | $64 |
+| Max drawdown | -$3,860 | -$215 | **-$162** | -$79 | -$46 | **-$30** |
+| Minute Sharpe | -4.8 | 2.0 | **2.2** | -2.6 | **1.8** | 1.6 |
+| Two-sided uptime | 99.6% | 95.3% | 98.7% | 100% | 78.6% | 99.2% |
+| Markout at 10s (bps) | -0.38 | +0.06 | **+0.12** | -0.83 | **-0.16** | -0.29 |
+
+Forecast skill on the next 10-second bar, walk-forward, 2,279 bars per ticker (lower pinball loss is better):
+
+| | AAPL vol | AAPL spread | MSFT vol | MSFT spread |
+| :--- | ---: | ---: | ---: | ---: |
+| Timestral pinball loss | **0.282** | **0.913** | **0.368** | **0.0038** |
+| EWMA pinball loss | 0.285 | 0.983 | 0.389 | 0.0068 |
+| Timestral 80% band coverage | 81.0% | 80.8% | 87.2% | 85.0% |
+| EWMA 80% band coverage | 79.5% | 79.3% | 88.0% | 77.8% |
+
+What this says, plainly:
+
+1. **Quoting at the touch loses money on both names.** Negative markouts at every horizon: you get filled right before the price moves against you. That is adverse selection, and the queue-aware fill model is what makes it visible.
+2. **Volatility-aware quoting turns that around.** Both forecast-driven strategies are profitable on both names.
+3. **Timestral forecasts better than EWMA on every target**, by 1 to 5% on volatility and 7 to 44% on spread. Neither model is clearly better calibrated.
+4. **In the strategy, Timestral's edge shows up as risk, not PnL.** It has a lower drawdown on both names and stays two-sided far more often on MSFT (99% vs 79%), while PnL is a wash. One day per ticker is nowhere near enough to call this a durable edge.
 
 ## Layout
 
