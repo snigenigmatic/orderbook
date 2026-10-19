@@ -19,6 +19,10 @@ public:
     virtual void on_delete(
         OrderId order_id) = 0;
 
+    virtual void on_execute(
+        OrderId order_id,
+        Volume volume) = 0;
+
     virtual Price best_bid() const = 0;
     virtual Price best_ask() const = 0;
 };

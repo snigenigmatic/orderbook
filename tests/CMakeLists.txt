@@ -21,6 +21,7 @@ enable_testing()
 
 add_executable(unit_tests
     test_orderbook.cpp
+    test_fifo_book.cpp
 )
 
 target_link_libraries(unit_tests

@@ -29,6 +29,10 @@ void Dispatcher::run(
         case MessageType::Delete:
             book.on_delete(msg.del.order_id);
             break;
+
+        case MessageType::Execute:
+            book.on_execute(msg.exec.order_id, msg.exec.volume);
+            break;
         }
 
         uint64_t end = now_ns();

@@ -7,3 +7,13 @@ out/
 # Gradle
 .gradle/
 gradle-build/
+
+# lobcast
+build-py/
+data/
+out/
+*.so
+*.pyd
+__pycache__/
+*.egg-info/
+.pytest_cache/

@@ -11,6 +11,7 @@ public:
     void on_add(OrderId, Side, Price, Volume) override;
     void on_modify(OrderId, Volume) override;
     void on_delete(OrderId) override;
+    void on_execute(OrderId, Volume) override;
 
     Price best_bid() const override;
     Price best_ask() const override;

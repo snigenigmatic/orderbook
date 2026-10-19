@@ -77,7 +77,11 @@ void OrderBookVector::on_modify(
     auto &ref = it->second;
     Volume delta = new_volume - ref.volume;
 
-    if (ref.side == Side::Bid)
+    if (delta < 0)
+    {
+        remove_level(ref.side == Side::Bid ? bids_ : asks_, ref.price, -delta);
+    }
+    else if (ref.side == Side::Bid)
     {
         add_level(bids_, ref.price, delta, true);
     }
@@ -117,4 +121,21 @@ Price OrderBookVector::best_bid() const
 Price OrderBookVector::best_ask() const
 {
     return asks_.empty() ? 0 : asks_.front().first;
+}
+
+void OrderBookVector::on_execute(OrderId order_id, Volume volume)
+{
+    auto it = orders_.find(order_id);
+    if (it == orders_.end())
+        return;
+
+    Volume remaining = it->second.volume - volume;
+    if (remaining <= 0)
+    {
+        on_delete(order_id);
+    }
+    else
+    {
+        on_modify(order_id, remaining);
+    }
 }

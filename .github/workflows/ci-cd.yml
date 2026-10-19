@@ -2,7 +2,7 @@ name: Build and Test
 
 on:
   push:
-    branches: [ "main" , "arm"]
+    branches: [ "main" , "arm", "backtester"]
   pull_request:
     branches: [ "main" ]
 
@@ -28,3 +28,20 @@ jobs:
     - name: Test
       working-directory: build
       run: ctest -C ${{ matrix.build_type }} --output-on-failure
+
+  python:
+    name: python - ubuntu-latest
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - uses: actions/setup-python@v5
+      with:
+        python-version: "3.12"
+
+    - name: Install lobcast
+      run: pip install ".[dev]"
+
+    - name: Test
+      run: pytest -q

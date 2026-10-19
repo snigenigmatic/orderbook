@@ -24,6 +24,10 @@ public:
     void on_delete(
         OrderId order_id) override;
 
+    void on_execute(
+        OrderId order_id,
+        Volume volume) override;
+
     Price best_bid() const override;
     Price best_ask() const override;
 

@@ -42,6 +42,10 @@ void OrderBookMap::on_modify(
         if (level_it != bids_.end())
         {
             level_it->second += (new_volume - ref.volume);
+            if (level_it->second <= 0)
+            {
+                bids_.erase(level_it);
+            }
         }
     }
     else
@@ -50,6 +54,10 @@ void OrderBookMap::on_modify(
         if (level_it != asks_.end())
         {
             level_it->second += (new_volume - ref.volume);
+            if (level_it->second <= 0)
+            {
+                asks_.erase(level_it);
+            }
         }
     }
 
@@ -100,4 +108,21 @@ Price OrderBookMap::best_bid() const
 Price OrderBookMap::best_ask() const
 {
     return asks_.empty() ? 0 : asks_.begin()->first;
+}
+
+void OrderBookMap::on_execute(OrderId order_id, Volume volume)
+{
+    auto it = orders_.find(order_id);
+    if (it == orders_.end())
+        return;
+
+    Volume remaining = it->second.volume - volume;
+    if (remaining <= 0)
+    {
+        on_delete(order_id);
+    }
+    else
+    {
+        on_modify(order_id, remaining);
+    }
 }

@@ -1,0 +1,37 @@
+[build-system]
+requires = ["scikit-build-core>=0.10", "nanobind>=2.0"]
+build-backend = "scikit_build_core.build"
+
+[project]
+name = "lobcast"
+version = "0.1.0"
+description = "LOBSTER L3 backtester on a low-latency C++ order book, with Timestral quantile forecasts"
+requires-python = ">=3.10"
+dependencies = [
+    "numpy>=1.26",
+    "pandas>=2.0",
+    "matplotlib>=3.8",
+]
+
+[project.optional-dependencies]
+timestral = [
+    "torch>=2.4",
+    "timestral @ git+https://github.com/mistralai/timestral.git",
+]
+dev = ["pytest>=8"]
+
+[project.scripts]
+lobcast = "lobcast.cli:main"
+
+[tool.scikit-build]
+minimum-version = "0.10"
+build-dir = "build/{wheel_tag}"
+wheel.packages = ["python/lobcast"]
+
+[tool.scikit-build.cmake.define]
+ORDERBOOK_BUILD_PYTHON = "ON"
+ORDERBOOK_BUILD_TESTS = "OFF"
+ORDERBOOK_PORTABLE = "ON"
+
+[tool.pytest.ini_options]
+testpaths = ["python/tests"]

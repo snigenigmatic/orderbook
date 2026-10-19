@@ -13,7 +13,8 @@ enum class Side : uint8_t {
 enum class MessageType : uint8_t {
     Add,
     Modify,
-    Delete
+    Delete,
+    Execute
 };
 
 struct AddOrderMsg {
@@ -32,11 +33,17 @@ struct DeleteOrderMsg {
     OrderId order_id;
 };
 
+struct ExecuteOrderMsg {
+    OrderId order_id;
+    Volume volume;
+};
+
 struct Message {
     MessageType type;
     union {
         AddOrderMsg add;
         ModifyOrderMsg modify;
         DeleteOrderMsg del;
+        ExecuteOrderMsg exec;
     };
 };
